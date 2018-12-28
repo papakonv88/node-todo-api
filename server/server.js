@@ -1,15 +1,14 @@
-var express = require('express');
-var bodyParser = require('body-parser');
-var {ObjectID} = require('mongodb');
+const _ = require('lodash');
+const express = require('express');
+const bodyParser = require('body-parser');
+const {ObjectID} = require('mongodb');
 
 var {mongoose} = require('./db/mongoose');
 var {Todo} = require('./models/todo');
 var {User} = require('./models/user');
 
-
 var app = express();
-
-var PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
@@ -25,13 +24,12 @@ app.post('/todos', (req, res) => {
   });
 });
 
-
-app.get('/todos', (req, res)=> {
-   Todo.find({}).then((todos)=> {
-       res.send({todos});
-   }, (e)=> {
-       res.status(400).send(e);
-   });
+app.get('/todos', (req, res) => {
+  Todo.find().then((todos) => {
+    res.send({todos});
+  }, (e) => {
+    res.status(400).send(e);
+  });
 });
 
 app.get('/todos/:id', (req, res) => {
@@ -46,32 +44,58 @@ app.get('/todos/:id', (req, res) => {
       return res.status(404).send();
     }
 
-    res.send({todo: todo});
+    res.send({todo});
   }).catch((e) => {
     res.status(400).send();
   });
 });
 
-app.delete('/todos/:id', (req, res)=>{
-    var id = req.params.id;
-    if (!ObjectID.isValid(id)) {
-        return res.status(404).send();
+app.delete('/todos/:id', (req, res) => {
+  var id = req.params.id;
+
+  if (!ObjectID.isValid(id)) {
+    return res.status(404).send();
+  }
+
+  Todo.findByIdAndRemove(id).then((todo) => {
+    if (!todo) {
+      return res.status(404).send();
     }
-    
-    Todo.findByIdAndRemove(id).then((todo)=>{
-        if (!todo) {
-        return res.status(404).send();
-        }
-        
-        res.send({todo: todo});
-    }).catch((e)=> {
-        res.status(400).send();
-    });
+
+    res.send({todo});
+  }).catch((e) => {
+    res.status(400).send();
+  });
 });
 
+app.patch('/todos/:id', (req, res) => {
+  var id = req.params.id;
+  var body = _.pick(req.body, ['text', 'completed']);
 
-app.listen(PORT, () => {
-  console.log(`Started on port ${PORT}`);
+  if (!ObjectID.isValid(id)) {
+    return res.status(404).send();
+  }
+
+  if (_.isBoolean(body.completed) && body.completed) {
+    body.completedAt = new Date().getTime();
+  } else {
+    body.completed = false;
+    body.completedAt = null;
+  }
+
+  Todo.findOneAndUpdate({"_id": ObjectID(id)}, {$set: body}, {returnNewDocument: false}).then((todo) => {
+    if (!todo) {
+      return res.status(404).send();
+    }
+
+    res.send({todo});
+  }).catch((e) => {
+    res.status(400).send();
+  })
+});
+
+app.listen(port, () => {
+  console.log(`Started up at port ${port}`);
 });
 
 module.exports = {app};
