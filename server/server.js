@@ -97,6 +97,28 @@ app.patch('/todos/:id', (req, res) => {
   })
 });
 
+app.post('/users', (req, res)=> {
+    var body = _.pick(req.body, ['email', 'password']);
+    
+    var newUser = new User({
+      email: body.email,
+      password: body.password
+    });
+    
+    newUser.generateAuthToken().then((result)=> {
+        newUser.tokens = newUser.tokens.concat(result);
+        return newUser.save()
+    }).then((user)=> {
+        var token = user.tokens[0].token;
+        res.header('x-auth', token).send(user);
+    }).catch((e)=> {
+       res.status(400).send('Unable to save the new user'); 
+    });
+});
+
+
+
+
 app.listen(port, () => {
   console.log(`Started up at port ${port}`);
 });
