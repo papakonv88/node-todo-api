@@ -9,6 +9,7 @@ const {ObjectID} = require('mongodb');
 var {mongoose} = require('./db/mongoose');
 var {Todo} = require('./models/todo');
 var {User} = require('./models/user');
+var {authenticate} = require('./middleware/authenticate.js');
 
 var app = express();
 const port = process.env.PORT;
@@ -105,6 +106,8 @@ app.post('/users', (req, res)=> {
       password: body.password
     });
     
+    /* generateAuthToken - instance mongoose method referring to newUser variable*/
+    
     newUser.generateAuthToken().then((result)=> {
         newUser.tokens = newUser.tokens.concat(result);
         return newUser.save()
@@ -116,6 +119,10 @@ app.post('/users', (req, res)=> {
     });
 });
 
+
+app.get('/users/me', authenticate, (req, res)=> {
+    res.send(req.user);
+});
 
 
 
