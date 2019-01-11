@@ -44,13 +44,15 @@ UserSchema.methods.toJSON = function () {
 };
 
 UserSchema.methods.generateAuthToken = function () {
-    return new Promise((resolve, reject)=> {
-        var user = this; /*instance*/
-        var access = 'auth';
-        var token = jwt.sign({_id : user._id, access}, 'abc123').toString();
-        
-        resolve({access, token});
-    });
+  var user = this;
+  var access = 'auth';
+  var token = jwt.sign({_id: user._id.toHexString(), access}, 'abc123').toString();
+
+  user.tokens.push({access, token});
+
+  return user.save().then(() => {
+    return token;
+  });
 };
 
 
@@ -71,6 +73,19 @@ UserSchema.statics.findByToken = function (token) {
         'tokens.access': 'auth'
     });
     
+};
+
+UserSchema.statics.findByCredentials = function (email, password) {
+   User = this;
+      return User.findOne({email}).then((doc)=> {
+      return  bcrypt.compare(password, doc.password).then((res)=> {
+            if (res) {
+                return doc;
+                } else {
+                   throw new Error('Failed to find user by credentials')
+                }
+        });   
+    });
 };
 
 UserSchema.pre('save', function (next) {
