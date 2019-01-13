@@ -1,5 +1,15 @@
 var env = process.env.NODE_ENV || 'development';
-console.log('env: ', env);
+
+if (env === "test" || env === "development") {
+    var config = require('./config.json');
+    var envConfig = config[env];
+    
+    Object.keys(envConfig).forEach((key)=> {
+       process.env[key] = envConfig[key]; 
+    });   
+}
+
+/*console.log('env: ', env);
 
 if (env === 'development') {
     process.env.PORT = 3000;
@@ -7,4 +17,4 @@ if (env === 'development') {
 } else if (env === 'test') {
     process.env.PORT = 3000;
     process.env.MONGOLAB_URI = 'mongodb://127.0.0.1:27017/TodoAppTest';
-}
+}*/
